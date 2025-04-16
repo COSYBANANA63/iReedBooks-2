@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="3.1" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd">
+    <session-config>
+        <!-- Set session timeout to 30 minutes instead of 30 days -->
+        <session-timeout>30</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+        </cookie-config>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+    
+    <!-- Define filter for session management -->
+    <filter>
+        <filter-name>SessionCheckFilter</filter-name>
+        <filter-class>filters.SessionCheckFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>SessionCheckFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+</web-app>
