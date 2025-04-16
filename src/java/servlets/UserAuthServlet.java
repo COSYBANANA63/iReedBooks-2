@@ -68,8 +68,18 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response)
     } else if ("/register".equals(pathInfo)) {
         request.getRequestDispatcher("/register.jsp").forward(request, response);
         return;
-    }
+    }else if ("/change-password".equals(pathInfo)) {
+            // Check if user is logged in
+            HttpSession session = request.getSession(false);
+            if (session == null || session.getAttribute("user") == null) {
+                response.sendRedirect(request.getContextPath() + "/auth/login");
+                return;
+            }
     
+            // Forward to change-password.jsp
+            request.getRequestDispatcher("/change-password.jsp").forward(request, response);
+            return;
+        }
     // Default redirect to login
     response.sendRedirect(request.getContextPath() + "/auth/login");
 }
@@ -84,6 +94,8 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response)
             handleLogin(request, response);
         } else if ("/register".equals(pathInfo)) {
             handleRegister(request, response);
+        } else if ("/change-password".equals(pathInfo)) {
+            handleChangePassword(request, response);
         } else {
             response.sendRedirect(request.getContextPath() + "/auth/login");
         }
@@ -183,6 +195,84 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response)
                 } else {
                     request.setAttribute("error", "Registration failed");
                     request.getRequestDispatcher("/register.jsp").forward(request, response);
+                }
+            }
+        } catch (SQLException e) {
+            throw new ServletException("Database error", e);
+        }
+    }
+    
+    private void handleChangePassword(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        
+        // Check if user is logged in
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/auth/login");
+            return;
+        }
+        
+        // Get current user from session
+        @SuppressWarnings("unchecked")
+        Map<String, Object> currentUser = (Map<String, Object>) session.getAttribute("user");
+        String username = (String) currentUser.get("username");
+        
+        // Get form parameters
+        String currentPassword = request.getParameter("currentPassword");
+        String newPassword = request.getParameter("newPassword");
+        String confirmPassword = request.getParameter("confirmPassword");
+        
+        // Validate inputs
+        if (currentPassword == null || newPassword == null || confirmPassword == null ||
+            currentPassword.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+            request.setAttribute("error", "All fields are required");
+            request.getRequestDispatcher("/change-password.jsp").forward(request, response);
+            return;
+        }
+        
+        if (newPassword.length() < 6) {
+            request.setAttribute("error", "New password must be at least 6 characters long");
+            request.getRequestDispatcher("/change-password.jsp").forward(request, response);
+            return;
+        }
+        
+        if (!newPassword.equals(confirmPassword)) {
+            request.setAttribute("error", "New password and confirm password do not match");
+            request.getRequestDispatcher("/change-password.jsp").forward(request, response);
+            return;
+        }
+        
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            // Verify current password
+            String verifySql = "SELECT COUNT(*) AS count FROM Users WHERE username = ? AND password = ?";
+            
+            try (PreparedStatement stmt = conn.prepareStatement(verifySql)) {
+                stmt.setString(1, username);
+                stmt.setString(2, currentPassword);
+                ResultSet rs = stmt.executeQuery();
+                
+                if (!rs.next() || rs.getInt("count") == 0) {
+                    request.setAttribute("error", "Current password is incorrect");
+                    request.getRequestDispatcher("/change-password.jsp").forward(request, response);
+                    return;
+                }
+            }
+            
+            // Update password
+            String updateSql = "UPDATE Users SET password = ? WHERE username = ?";
+            
+            try (PreparedStatement stmt = conn.prepareStatement(updateSql)) {
+                stmt.setString(1, newPassword);
+                stmt.setString(2, username);
+                
+                int rowsAffected = stmt.executeUpdate();
+                
+                if (rowsAffected > 0) {
+                    request.setAttribute("message", "Password changed successfully");
+                    request.getRequestDispatcher("/change-password.jsp").forward(request, response);
+                } else {
+                    request.setAttribute("error", "Failed to change password");
+                    request.getRequestDispatcher("/change-password.jsp").forward(request, response);
                 }
             }
         } catch (SQLException e) {
