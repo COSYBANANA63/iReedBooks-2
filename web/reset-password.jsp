@@ -4,7 +4,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Login - BookStore</title>
+    <title>Reset Password - BookStore</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
             <div class="col-md-6">
                 <div class="card shadow">
                     <div class="card-header">
-                        <h2 class="text-center">Login</h2>
+                        <h2 class="text-center">Reset Your Password</h2>
                     </div>
                     <div class="card-body">
                         <c:if test="${not empty error}">
@@ -24,23 +24,23 @@
                             </div>
                         </c:if>
                         
-                        <form action="${pageContext.request.contextPath}/auth/login" method="post">
+                        <form action="${pageContext.request.contextPath}/auth/reset-password" method="post">
+                            <input type="hidden" name="username" value="${username}">
+                            <input type="hidden" name="token" value="${token}">
+                            
                             <div class="mb-3">
-                                <label for="username" class="form-label">Username</label>
-                                <input type="text" class="form-control" id="username" name="username" required>
+                                <label for="newPassword" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+                                <div class="form-text">Password must be at least 6 characters long.</div>
                             </div>
                             <div class="mb-3">
-                                <label for="password" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
+                                <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
                             </div>
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">Login</button>
+                                <button type="submit" class="btn btn-primary">Set New Password</button>
                             </div>
                         </form>
-                        <div class="mt-3 text-center">
-                            <p>Don't have an account? <a href="${pageContext.request.contextPath}/auth/register">Register now</a></p>
-                            <p>Forgot your password? <a href="${pageContext.request.contextPath}/auth/forgot-password">Reset it here</a></p>
-                        </div>
                     </div>
                 </div>
             </div>

@@ -252,6 +252,30 @@ public class CartServlet extends HttpServlet {
         String username = (String) user.get("username");
         
         try (Connection conn = DatabaseConnection.getConnection()) {
+            // Check if there's enough inventory for each book
+        for (Map.Entry<String, Integer> entry : cart.entrySet()) {
+            String isbn = entry.getKey();
+            int quantity = entry.getValue();
+            
+            // Check inventory
+            String checkSql = "SELECT inventory, title FROM Book WHERE isbn = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(checkSql)) {
+                stmt.setString(1, isbn);
+                ResultSet rs = stmt.executeQuery();
+                
+                if (rs.next()) {
+                    int inventory = rs.getInt("inventory");
+                    String title = rs.getString("title");
+                    if (inventory < quantity) {
+                        // Not enough inventory
+                        request.setAttribute("errorMessage", "Not enough inventory for book: " + title + 
+                                             ". Only " + inventory + " copies available.");
+                        showCart(request, response, cart);
+                        return;
+                    }
+                }
+            }
+        }
             conn.setAutoCommit(false);
             
             try {
@@ -310,11 +334,19 @@ public class CartServlet extends HttpServlet {
                         
                         // Update inventory
                         String updateSql = "UPDATE Book SET inventory = inventory - ? WHERE isbn = ?";
-                        
+
                         try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
                             updateStmt.setInt(1, quantity);
                             updateStmt.setString(2, isbn);
-                            updateStmt.executeUpdate();
+                            int rowsAffected = updateStmt.executeUpdate();
+
+                            // Debug check
+                            System.out.println("Updated inventory for ISBN " + isbn + ": " + rowsAffected + " rows affected");
+
+                            if (rowsAffected == 0) {
+                                // No rows were updated - this could happen if the ISBN doesn't exist
+                                System.err.println("Warning: No inventory updated for ISBN " + isbn);
+                            }
                         }
                     }
                 }
